@@ -1,0 +1,159 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Accordion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="css/vendor/normalize.css">
+  <link rel="stylesheet" href="css/global.css">
+</head>
+
+<body>
+  <div class="container">
+    <dl class="faq">
+      <dt><h1>Introduction</h1></dt>
+      <dd class="expanded"><div class="inner">
+        <p><a href="http://qunitjs.com/">QUnit</a> is a powerful, yet easy-to-use JavaScript unit testing framework. It is used by the <em>jQuery</em>, <em>jQuery UI</em> and <em>jQuery Mobile</em> projects and it is well suited for testing a typical jQuery plugin. This article builts upon <a href="https://www.sitepoint.com/getting-started-qunit/">Getting Started with QUnit</a>, <a href="https://www.sitepoint.com/test-asynchronous-code-qunit/">How to Test Asynchronous Code with QUnit</a> and of course the official <a href="http://qunitjs.com/intro/">Introduction to Unit Testing</a> articles so feel free to skim through those first and return to see how QUnit can be used to test an <em>already built</em> jQuery plugin, and get you started with unit testing.</p>
+      </div></dd>
+
+      <dt><h2>Installation</h2></dt>
+      <dd><div class="inner">
+        <p>You should start with a mostly empty HTML file, where the <a href="https://code.jquery.com/qunit/qunit-2.0.0.js">qunit-2.0.0.js</a> and <a href="https://code.jquery.com/qunit/qunit-2.0.0.css">qunit-2.0.0.css</a> files will be included, along with the plugin to be tested. I have a simple (and incomplete) Accordion plugin at GitHub for the purpose, built on a solid <em>pattern</em> with just enough functionality (attaches click events, manipulates the DOM, executes callbacks, provides a public method) to give me something to test. Since the plugin was not built with test-driven techniques I wiil have to unit test it as it is, and see if it works as planned You are free to improve the plugin, add functionality if you like, but this is beyond the scope of this article. On the other hand, there are already established, well-built plugins for the purpose, like <a href="https://github.com/nico3333fr/jquery-accessible-accordion-aria">jQuery Accessible Accordion System, using ARIA</a> or <a href="https://github.com/frend/frend.co">Frend Accordion</a> (<em>vanilla</em> JavaScript actually) so it may not be worth it. But let’s test it first!</p>
+      </div></dd>
+
+      <dt><h2>Testing</h2></dt>
+      <dd><div class="inner">
+        <p>The HTML file (let’s call it <code>test.html</code>) needs a couple of empty <code>div</code>s: a <code>&lt;div id="qunit"&gt;&lt;/div&gt;</code> and a <code>&lt;div id="qunit-fixture"&gt;&lt;/div&gt;</code>. Inside <code>#qunit-fixture</code> you should insert the HTML that the plugin will act upon, and it will be reset to the <em>this</em> state before each test. Those tests could be written in a <code>tests.js</code> file (like the one I have on Github), or included inline in the same HTML file. The actual tests are included in <code>QUnit.test()</code> methods.</p>
+      </div></dd>
+
+      <dt><h3>Plugin registration</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'Registration', function( assert ) {
+  assert.ok( $.fn.accordion, 'registered as a jQuery plugin' );
+
+  var defaults = {
+        headerElement: 'dt',
+        contentElement: 'dd',
+        preselected: 'expanded',
+        onCollapse: $.noop,
+        onExpand: $.noop,
+        onInit: $.noop,
+        onDestroy: $.noop
+      };
+
+  assert.equal( $.fn.accordion.defaults, defaults.toString(), 'default settings are available' );
+} );</code></pre>
+        <p>The first test (“Registration”) is checking whether the plugin was successfully initialized and that default settings are globally available. I used the `ok` <em>assertion</em> to test for a “truthy” condition, like the existence of <code>$.fn.accordion</code> that registers when the plugin is loaded. Default settings are then tested using the <code>equal</code> assertion, on a serialized <code>defaults</code> object, to test that plugin defaults are globally available to the developer.</p>
+      </div></dd>
+
+      <dt><h3>Setting global defaults</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'Default settings', function( assert ) {
+  var $faq = $( '.faq' ),
+      defaults = $.fn.accordion.defaults,
+      newDefaults = $.extend( {}, $.fn.accordion.defaults,
+        {
+          headerElement: '.accordion-header',
+          contentElement: '.accordion-panel'
+        }
+      );
+
+  $.fn.accordion.defaults = newDefaults;
+  $faq.accordion();
+
+  assert.propEqual( $faq.data( 'plugin_accordion' ).settings, newDefaults, 'set new default settings' );
+
+  $.fn.accordion.defaults = defaults;
+} );</code></pre>
+        <p>During the initialization of the plugin, the default settings are globally available at <code>$.fn.accordion.defaults</code> and can be changed to whatever is needed, for every instance of the plugin in the page. The “Default settings” test sets a couple of new settings, overwriting the default elements that the accordion plugin uses. The plugin should see these new settings and adopt them. The <code>propEqual</code> assertion compares the properties of <em>new</em> settings object to the <code>settings</code> object that the plugin was initialized with (saved at <code>$( ACCORDION_ELEMENT ).data( 'plugin_accordion' ).settings</code>), and those objects should have the same properties. The default <em>defaults</em> are restored afterwards, ready for the next tests.</p>
+      </div></dd>
+
+      <dt><h3>Chainability</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'Chainability', function( assert ) {
+  var $faq = $( '.faq' );
+
+  assert.ok( $faq.accordion().addClass( 'testing' ), 'can be chained' );
+  assert.ok( $faq.hasClass( 'testing' ), 'successfully chained' );
+} );
+</code></pre>
+        <p>jQuery plugins should be chainable, meaning that when initialized on a DOM element, the same element should be returned, available for the next method / plugin to act upon. I use the <code>ok</code> assertion again and see if my plugin can be successfully chained. This test might not be needed if your plugin is based on a solid boilerplate, but I have it here for completness’ sake.</p>
+      </div></dd>
+
+      <dt><h3>Adding HTML attributes</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'ARIA attributes', function( assert ) {
+  var $faq = $( '.faq' );
+
+  $faq.accordion();
+
+  assert.ok( $faq.is( '[role="tablist"]' ), 'added role' );
+  assert.ok( $faq.is( '[aria-multiselectable="false"]' ), 'is not aria-multiselectable' );
+} );</code></pre>
+        <p><a href="https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA">ARIA</a> attributes are added to the elements, to make the whole thing accessible to assistive technologies. A bunch of <code>ok</code> assertions can be used to check for the correct initialization of various attributes on the DOM elements. I have not included all the possible tests above for brevity. I run through all header and content elements, and check with `ok` assertions for the addition of the correct ARIA attributes on each and every DOM element manipulated by the plugin.</p>
+      </div></dd>
+
+      <dt><h3>Testing user interactions</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'Callbacks', function( assert ) {
+  var $faq = $( '.faq' );
+
+  $faq.accordion( {
+    onCollapse: function( $header, $content ) {
+      assert.ok( $header.is( '[aria-selected="false"][aria-expanded="false"]' ), 'collapsed header:' + $header[0].id );
+      assert.ok( $content.is( '[aria-hidden="true"]' ), 'collapsed content:' + $content[0].id );
+    },
+    onExpand: function( $header, $content ) {
+      assert.ok( $header.is( '[aria-selected="true"][aria-expanded="true"]' ), 'clicked header:' + $header[0].id );
+      assert.ok( $content.is( '[aria-hidden="false"]' ), 'expanded content:' + $content[0].id );
+    }
+  } );
+
+  $( $faq.data( 'accordion_headers' ) ).first().trigger( 'click' );
+  $( $faq.data( 'accordion_headers' ) ).first().trigger( 'click' );
+} );</code></pre>
+        <p>User interactions with the DOM must be triggered and/or faked. We can easily trigger click events, and see whether a callback is indeed called, getting back the expected parameters, and that the correct attributes are indeed applied. The <code>ok</code> assertion is again used, to check if clicking on a header is working as expected. I test <code>onCollapse</code> and <code>onExpand</code> callbacks by triggering a click event on the first header element twice.</p>
+      </div></dd>
+
+      <dt><h3>Clean-up</h3></dt>
+      <dd><div class="inner">
+        <pre><code>QUnit.test( 'Cleanup', function( assert ) {
+  var $faq = $( '.faq' );
+
+  $faq.accordion();
+  $faq.accordion( 'destroy' );
+
+  assert.notOk( $faq.data( 'plugin_accordion' ), 'destroyed' );
+} );</code></pre>
+        <p>The <code>destroy</code> method is called on the element that the accordion was previously initialized upon, and the <code>notOk</code> test is checking for the existence of the data that the plugin saves on the element, after being “destroyed”</p>
+        <p>This is how the <code>test.html</code> looks like, if all the tests are successful. Well done! <img src="images/results.png" alt="QUnit results"></p>
+      </div></dd>
+
+      <dt><h2>Conclusion</h2></dt>
+      <dd><div class="inner">
+        <p>Hopefully you can see that QUnit is an easy framework to get you started with unit testing, and how it can be used to test your already written jQuery plugins. Once you get the hang of it, you can move to test-driven development and maybe <a href="https://www.sitepoint.com/unit-test-javascript-mocha-chai/">explore other</a>, <a href="https://www.sitepoint.com/sinon-tutorial-javascript-testing-mocks-spies-stubs/">more advanced</a> frameworks.</p>
+      </div></dd>
+    </dl>
+  </div>
+
+  <script src="js/vendor/jquery-1.12.3.min.js"></script>
+  <script src="js/accordion.js"></script>
+  <script>var f = $( '.faq' ).accordion( {
+    onCollapse: function( $header, $content ) {
+    },
+    onExpand: function( $header, $content ) {
+    },
+    onInit: function() {
+      this.addClass( 'has-accordion' );
+    },
+    onDestroy: function( $headers, $contents ) {
+      this.removeClass( 'has-accordion' );
+    }
+  } );</script>
+</body>
+
+</html>

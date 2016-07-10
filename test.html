@@ -1,0 +1,33 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <title>Accordion</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <link rel="stylesheet" href="css/vendor/normalize.css">
+  <link rel="stylesheet" href="css/vendor/qunit-2.0.0.css">
+</head>
+
+<body>
+  <div id="qunit"></div>
+  <div id="qunit-fixture">
+    <dl class="faq">
+      <dt>Installation</dt>
+      <dd>You should start with a simple HTML file, where the qunit-2.0.0.js and qunit-2.0.0.css files will be included, along with the plugin to be tested. I have a simple (and incomplete) Accordion plugin at Github for the purpose, built on a solid <em>pattern</em> with just enough functionality to give me something to test. Since the plugin was not built with test-driven techniquew I wiil have to unit test it as it is. Better late than never! You are free to improve the plugin, add functionality if you like, but this is beyond the scope of this article. On the other hand, there are already established, well-built plugins for the purpose, like jQuery Accessible Accordion System, using ARIA or Frend Accordion so it may not be worth it.</dd>
+
+      <dt>Testing</dt>
+      <dd>The HTML file (let’s call it <code>test.html</code>) needs a couple of empty <code>div</code>s, a <code>&lt;div id="qunit"&gt;&lt;/div&gt;</code> and a <code>&lt;div id="qunit-fixture"&gt;&lt;/div&gt;</code>. Inside <code>#qunit-fixture</code> you should insert the HTML that the plugin will act upon, and it will be reset to the original state before each test. Those tests could be written in a <code>tests.js</code> file (like the one I have on Github), or included inline in the same HTML file. The actual tests are included in <code>QUnit.test()</code> functions.</dd>
+    </dl>
+  </div>
+
+  <script src="js/vendor/jquery-1.12.3.min.js"></script>
+  <script src="js/vendor/qunit-2.0.0.js"></script>
+  <script src="js/accordion.js"></script>
+  <script src="js/test.js"></script>
+</body>
+
+</html>
